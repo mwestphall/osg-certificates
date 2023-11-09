@@ -4,7 +4,7 @@
 
 Name:           osg-ca-certs
 Version:        %{osg_version}
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        OSG Packaging of the IGTF CA Certs and OSG-specific CAs, in the OpenSSL 1.0.* format. 
 
 License:        Unknown
@@ -13,6 +13,7 @@ URL:            http://repo.opensciencegrid.org/cadist/
 Source0:        https://github.com/opensciencegrid/osg-certificates/archive/v%{vtag}/osg-certificates-%{vtag}.tar.gz
 Source1:        https://dist.eugridpma.info/distribution/igtf/current/igtf-policy-installation-bundle-%{igtf_version}.tar.gz
 Source2:        https://github.com/opensciencegrid/letsencrypt-certificates/archive/v0.3.2/letsencrypt-certificates.tar.gz
+Source3:        trusted_sha1_certs.sh
 # can obtain latest letsencrypt-certificates.tar.gz with a github.source line:
 # type=github repo=cilogon/letsencrypt-certificates tarball=letsencrypt-certificates.tar.gz tag=master hash=...
 
@@ -31,8 +32,18 @@ Conflicts:      osg-ca-scripts
 Obsoletes:      vdt-ca-certs
 Obsoletes:      osg-ca-certs-experimental
 Obsoletes:      osg-ca-certs-compat <= 1:1.37
+RemovePathPostfixes: .trusted-cert
 
 %description
+For details about the current certificate release, see https://repo.opensciencegrid.org/cadist/ and change log at https://repo.opensciencegrid.org/cadist/CHANGES.
+
+%package java
+Summary: Java-compatible SHA1 certs for %{name}
+BuildArch: noarch
+Conflicts: osg-ca-scripts
+RemovePathPostfixes: .java-cert
+
+%description java
 For details about the current certificate release, see https://repo.opensciencegrid.org/cadist/ and change log at https://repo.opensciencegrid.org/cadist/CHANGES.
 
 %prep
@@ -48,14 +59,17 @@ export CADIST=$PWD/certificates
 export PKG_NAME=%{name}
 
 ./build-certificates-dir.sh
+./add-trusted-sha1-certs.sh certificates trusted-cert java-cert
 
 %install
 mkdir -p $RPM_BUILD_ROOT/etc/grid-security/certificates
 mv certificates/* $RPM_BUILD_ROOT/etc/grid-security/certificates/
 
 %check
-cd $RPM_BUILD_ROOT/etc/grid-security/certificates
-sha256sum -c cacerts_sha256sum.txt
+# TODO how do we sha256sum the files that will have their names changed during install?
+# cd $RPM_BUILD_ROOT/etc/grid-security/certificates
+
+# sha256sum -c cacerts_sha256sum.txt
 
 %files
 %defattr(0644,root,root,-)
@@ -63,7 +77,16 @@ sha256sum -c cacerts_sha256sum.txt
 /etc/grid-security/certificates/*
 %doc
 
+%files java
+%defattr(0644,root,root,-)
+%dir %attr(0755,root,root) /etc/grid-security/certificates
+/etc/grid-security/certificates/*
+%doc
+
 %changelog
+* Thu Nov 9 2023 Matt Westphall <westphall@wisc.edu> - 1.115-2
+- Re-add el9 cert changes, create secondary package with original certs (SOFTWARE-5745)
+
 * Tue Oct 31 2023 Mátyás Selmeci <matyas@cs.wisc.edu> - 1.115-1
 - Update to IGTF 1.124 (SOFTWARE-5738)
 
@@ -361,7 +384,7 @@ sha256sum -c cacerts_sha256sum.txt
 * Wed Oct 3 2012 Anand Padmanabhan <apadmana@uiuc.edu> - 1.31-2
 - CA release corresponding to IGTF 1.50
 
-* Tue Sep 25 2012 Anand Padmanabhan <apadmana@uiuc.edu> - 1.31-1
+* Tue Sep 25 2012 Anand Padmanabhan <apadmana@uiuc.edu> - 1.31-1\
 - CA release corresponding to IGTF 1.50
 
 * Tue Aug 07 2012 Anand Padmanabhan <apadmana@uiuc.edu> - 1.30-1
@@ -414,4 +437,3 @@ Fix conflicts line.
 
 * Mon Aug 15 2011 Brian Bockelman <bbockelm@cse.unl.edu> - 1.20-1
 - Initial version, based on osg-ca-certs spec file.
-
