@@ -1,6 +1,6 @@
-%define igtf_version 1.125
-%define osg_version  1.116
-%define release_num  3
+%define igtf_version 1.126
+%define osg_version  1.117
+%define release_num  1
 %define vtag         %{osg_version}.igtf.%{igtf_version}-%{release_num}
 %define enable_trusted_sha1_certs 0
 
@@ -33,25 +33,9 @@ Conflicts:      osg-ca-scripts
 Obsoletes:      vdt-ca-certs
 Obsoletes:      osg-ca-certs-experimental
 Obsoletes:      osg-ca-certs-compat <= 1:1.37
-%if 0%{?rhel} >= 8
-RemovePathPostfixes: .trusted-cert
-%endif
 
 %description
 For details about the current certificate release, see https://repo.opensciencegrid.org/cadist/ and change log at https://repo.opensciencegrid.org/cadist/CHANGES.
-
-%if 0%{?rhel} >= 8
-%package java
-Summary: Java-compatible SHA1 certs for %{name}
-BuildArch: noarch
-Conflicts: osg-ca-scripts
-Provides:  grid-certificates = 7
-
-RemovePathPostfixes: .java-cert
-
-%description java
-For details about the current certificate release, see https://repo.opensciencegrid.org/cadist/ and change log at https://repo.opensciencegrid.org/cadist/CHANGES.
-%endif
 
 %prep
 %setup    -n osg-certificates-%{vtag}
@@ -66,16 +50,6 @@ export CADIST=$PWD/certificates
 export PKG_NAME=%{name}
 
 ./build-certificates-dir.sh
-
-%if 0%{?rhel} >= 8
-%if 0%{?enable_trusted_sha1_certs}
-./add-trusted-sha1-certs.sh certificates trusted-cert java-cert
-%else
-# We still want to make the osg-ca-certs and osg-ca-certs-java RPMs
-find certificates -name "*.pem" -exec cp '{}' '{}.java-cert' ';'
-find certificates -name "*.pem" -exec mv '{}' '{}.trusted-cert' ';'
-%endif
-%endif
 
 %install
 mkdir -p $RPM_BUILD_ROOT/etc/grid-security/certificates
@@ -93,15 +67,10 @@ mv certificates/* $RPM_BUILD_ROOT/etc/grid-security/certificates/
 /etc/grid-security/certificates/*
 %doc
 
-%if 0%{?rhel} >= 8
-%files java
-%defattr(0644,root,root,-)
-%dir %attr(0755,root,root) /etc/grid-security/certificates
-/etc/grid-security/certificates/*
-%doc
-%endif
-
 %changelog
+* Wed Jan 3 2024 Matt Westphall <westphall@wisc.edu> - 1.117-1
+- Update to IGTF 1.126, remove java certs again (SOFTWARE-5790)
+
 * Thu Nov 30 2023 Mátyás Selmeci <matyas@cs.wisc.edu> - 1.116-3
 - Provide grid-certificates in osg-ca-certs-java (SOFTWARE-5764)
 
